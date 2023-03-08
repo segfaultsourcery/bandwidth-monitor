@@ -29,13 +29,13 @@ async fn main() -> Result<()> {
 async fn test_and_store(spreadsheet: &Spreadsheet, server: &Server) {
     info!("Testing {}", server.name);
 
-    let result = test_bandwidth(&server);
+    let result = test_bandwidth(server);
 
     let result_vec = vec![
         result.timestamp.to_rfc3339(),
         server.name.to_string(),
         server.location.to_string(),
-        result.packet_loss.to_string(),
+        result.packet_loss.unwrap_or(0.0).to_string(),
         result.ping.latency.to_string(),
         (result.download.bandwidth as f32 / 125000.0).to_string(),
         result.download.latency.iqm.to_string(),

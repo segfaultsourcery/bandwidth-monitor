@@ -1,5 +1,6 @@
 use chrono::{DateTime, Local};
 use serde::{Deserialize, Serialize};
+use log::error;
 use std::process::Command;
 
 use thiserror::Error;
@@ -54,7 +55,7 @@ pub struct TestResult {
     pub download: Bandwidth,
     pub upload: Bandwidth,
     #[serde(rename = "packetLoss")]
-    pub packet_loss: u32,
+    pub packet_loss: Option<f32>,
 }
 
 pub type ResultT<T> = Result<T, BandwidthMonitorError>;
@@ -83,6 +84,8 @@ pub fn test_bandwidth(server: &Server) -> TestResult {
         .unwrap();
 
     let stdout = String::from_utf8(output.stdout).unwrap();
+
+    error!("{stdout}");
 
     serde_json::from_str(stdout.as_str()).unwrap()
 }

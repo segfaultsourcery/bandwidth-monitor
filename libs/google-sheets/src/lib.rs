@@ -67,17 +67,13 @@ impl Spreadsheet {
         if let Some(sheets) = result.1.sheets {
             sheets
                 .iter()
-                .find(|sheet| {
+                .any(|sheet| {
                     if let Some(props) = &sheet.properties {
-                        match &props.title {
-                            Some(t) if t == title => true,
-                            _ => false,
-                        }
+                      matches!(&props.title, Some(t) if t == title)
                     } else {
                         false
                     }
                 })
-                .is_some()
         } else {
             false
         }
