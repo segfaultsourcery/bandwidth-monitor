@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
@@ -19,4 +19,4 @@ jobs:
           file: target/release/bandwidth-monitor
           tag: ${{ github.sha }}
           overwrite: true
-          body: "Release of commit ${{ github.sha }}"
+          body: "Release of ${{ github.sha }}"
