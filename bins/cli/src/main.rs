@@ -61,9 +61,7 @@ async fn test_and_store(spreadsheet: &Spreadsheet, server: &Server) {
         .map(|head| head.to_string())
         .collect();
 
-        spreadsheet
-            .append(server.name.as_str(), vec![header])
-            .await;
+        spreadsheet.append(server.name.as_str(), vec![header]).await;
     }
     spreadsheet
         .append(server.name.as_str(), vec![result_vec])
