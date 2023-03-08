@@ -1,7 +1,8 @@
-use async_trait::async_trait;
 use log::{error, info};
 extern crate google_sheets4 as sheets4;
-use sheets4::api::ValueRange;
+use sheets4::api::{
+    AddSheetRequest, BatchUpdateSpreadsheetRequest, Request, SheetProperties, ValueRange,
+};
 use sheets4::Error;
 use sheets4::{hyper, hyper_rustls, oauth2, Sheets};
 use std::default::Default;
@@ -17,11 +18,6 @@ pub enum BandwidthMonitorError {
 pub type ResultT<T> = Result<T, BandwidthMonitorError>;
 
 pub type Hub = Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>;
-
-#[async_trait]
-pub trait Append {
-    async fn append(&self, sheet: &str, data: Vec<Vec<String>>);
-}
 
 pub struct Spreadsheet {
     hub: Hub,
@@ -58,11 +54,58 @@ impl Spreadsheet {
             spreadsheet_id: spreadsheet_id.to_string(),
         }
     }
-}
 
-#[async_trait]
-impl Append for Spreadsheet {
-    async fn append(&self, sheet: &str, data: Vec<Vec<String>>) {
+    pub async fn sheet_exists(&self, title: &str) -> bool {
+        let result = self
+            .hub
+            .spreadsheets()
+            .get(self.spreadsheet_id.as_str())
+            .doit()
+            .await
+            .unwrap();
+
+        if let Some(sheets) = result.1.sheets {
+            sheets
+                .iter()
+                .find(|sheet| {
+                    if let Some(props) = &sheet.properties {
+                        match &props.title {
+                            Some(t) if t == title => true,
+                            _ => false,
+                        }
+                    } else {
+                        false
+                    }
+                })
+                .is_some()
+        } else {
+            false
+        }
+    }
+
+    pub async fn create_sheet(&self, title: &str) {
+        let req = BatchUpdateSpreadsheetRequest {
+            requests: Some(vec![Request {
+                add_sheet: Some(AddSheetRequest {
+                    properties: Some(SheetProperties {
+                        title: Some(title.to_string()),
+                        ..Default::default()
+                    }),
+                }),
+                ..Default::default()
+            }]),
+            ..Default::default()
+        };
+
+        self.hub
+            .spreadsheets()
+            .batch_update(req, self.spreadsheet_id.as_str())
+            .doit()
+            .await
+            .unwrap();
+    }
+
+    pub async fn append(&self, sheet: &str, data: Vec<Vec<String>>) {
         // As the method needs a request, you would usually fill it with the desired information
         // into the respective structure. Some of the parts shown here might not be applicable !
         // Values shown here are possibly random and not representative !

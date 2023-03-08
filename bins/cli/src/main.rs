@@ -4,7 +4,7 @@ extern crate loggerv;
 
 use anyhow::{Context, Result};
 
-use bandwidth_monitor_google_sheets::{Append, Spreadsheet};
+use bandwidth_monitor_google_sheets::Spreadsheet;
 use bandwidth_monitor_ookla_speedtest::{fetch_near_test_servers, test_bandwidth};
 use log::{debug, info};
 
@@ -18,26 +18,45 @@ async fn main() -> Result<()> {
 
     let spreadsheet = Spreadsheet::connect(&args.client_secrets_file, &args.spreadsheet_id).await;
     let near_servers = fetch_near_test_servers();
+    let header: Vec<String> = vec![
+        "Time",
+        "Server Name",
+        "Server Location",
+        "Packet Loss",
+        "Idle Latency (ms)",
+        "Download (Mbps)",
+        "Download Latency (ms)",
+        "Upload (Mbps)",
+        "Upload Latency (ms)",
+    ]
+    .iter()
+    .map(|head| head.to_string())
+    .collect();
 
     for server in near_servers.servers {
         let result = test_bandwidth(&server);
 
-        info!("{:?}", result);
+        // info!("{:?}", result);
 
-        // "time","server name","server location","packet loss","idle latency","idle jitter","download","download latency","upload","upload latency"
         let result_vec = vec![
             result.timestamp.to_rfc3339(),
-            server.name,
+            server.name.to_string(),
             server.location,
             result.packet_loss.to_string(),
             result.ping.latency.to_string(),
             (result.download.bandwidth as f32 / 125000.0).to_string(),
             result.download.latency.iqm.to_string(),
-            (result.upload.bandwidth as f32/ 125000.0).to_string(),
+            (result.upload.bandwidth as f32 / 125000.0).to_string(),
             result.upload.latency.iqm.to_string(),
         ];
 
-        spreadsheet.append(&args.sheet, vec![result_vec]).await;
+        if !spreadsheet.sheet_exists(server.name.as_str()).await {
+            spreadsheet.create_sheet(server.name.as_str()).await;
+            spreadsheet
+                .append(server.name.as_str(), vec![header.to_owned()])
+                .await;
+        }
+        spreadsheet.append(server.name.as_str(), vec![result_vec]).await;
     }
 
     Ok(())
