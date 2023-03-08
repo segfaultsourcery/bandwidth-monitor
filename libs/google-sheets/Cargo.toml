@@ -15,3 +15,9 @@ workspace = "../.."
 thiserror = { workspace = true }
 
 log = { workspace = true }
+
+async-trait = "0.1.66"
+
+google-sheets4 = "*"
+serde = "^1.0"
+serde_json = "^1.0"

@@ -17,6 +17,8 @@ path="src/main.rs"
 [dependencies]
 log = { workspace = true }
 
+tokio = { version = "1", features = ["full"] }
+
 bandwidth-monitor-google-sheets = { path = "../../libs/google-sheets", version = "*"  }
 bandwidth-monitor-ookla-speedtest = { path = "../../libs/ookla-speedtest", version = "*"  }
 

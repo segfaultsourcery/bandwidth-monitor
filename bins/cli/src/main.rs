@@ -1,22 +1,31 @@
 extern crate ansi_term;
 extern crate clap_verbosity_flag;
 extern crate loggerv;
+
+use std::path::{Path, PathBuf};
+
 use anyhow::{Context, Result};
 
-use bandwidth_monitor_google_sheets::add;
-use bandwidth_monitor_ookla_speedtest::hello;
-use log::{debug, info};
+use bandwidth_monitor_google_sheets::{Append, Spreadsheet};
+use log::debug;
 
 use clap::Parser;
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     let args = Args::parse();
 
     setup(&args).context("Failed to setup application environment")?;
 
-    hello(args.name.as_str()).context("Failed to say hello")?;
+    let spreadsheet = Spreadsheet::connect(
+        &args.client_secrets_file,
+        &args.spreadsheet_id,
+    )
+    .await;
 
-    info!("1 + 1 = {}", add(1, 1).context("Failed to add 1 and 1")?);
+    spreadsheet
+        .append(&args.sheet, vec![vec!["A".to_string(), "B".to_string()]])
+        .await;
 
     Ok(())
 }
@@ -48,11 +57,19 @@ struct Args {
     #[structopt(flatten)]
     verbosity: clap_verbosity_flag::Verbosity,
 
-    /// Name to greet.
-    #[structopt(name = "NAME")]
-    name: String,
-
     /// Enables debug mode
     #[structopt(short, long)]
     debug: bool,
+
+    /// Path to the secrets file provided by google
+    #[structopt(short, long, default_value="client_secret.json")]
+    client_secrets_file: String,
+
+    /// Id of the spreadsheet
+    #[structopt()]
+    spreadsheet_id: String,
+
+    /// Name of the sheet 
+    #[structopt()]
+    sheet: String
 }
