@@ -1,42 +1,42 @@
-use assert_cmd::prelude::*;
-use predicates::prelude::*;
-use std::process::Command;
+// use assert_cmd::prelude::*;
+// use predicates::prelude::*;
+// use std::process::Command;
 
-#[test]
-fn hello_world() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("bandwidth-monitor")?;
+// #[test]
+// fn hello_world() -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cmd = Command::cargo_bin("bandwidth-monitor")?;
 
-    cmd.arg("world");
-    cmd.assert().failure().stderr(
-        predicate::str::contains("Failed to say hello")
-            .and(predicate::str::contains("I will not say 'Hello, world.'!")),
-    );
+//     cmd.arg("world");
+//     cmd.assert().failure().stderr(
+//         predicate::str::contains("Failed to say hello")
+//             .and(predicate::str::contains("I will not say 'Hello, world.'!")),
+//     );
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn hello_john() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("bandwidth-monitor")?;
+// #[test]
+// fn hello_john() -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cmd = Command::cargo_bin("bandwidth-monitor")?;
 
-    cmd.arg("John");
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Hello, John."));
+//     cmd.arg("John");
+//     cmd.assert()
+//         .success()
+//         .stdout(predicate::str::contains("Hello, John."));
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[test]
-fn test_add() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("bandwidth-monitor")?;
+// #[test]
+// fn test_add() -> Result<(), Box<dyn std::error::Error>> {
+//     let mut cmd = Command::cargo_bin("bandwidth-monitor")?;
 
-    cmd.args(["-vv", "John"]);
+//     cmd.args(["-vv", "John"]);
 
-    cmd.assert()
-        .success()
-        .stdout(predicate::str::contains("Hello, John."))
-        .stderr(predicate::str::contains("1 + 1 = 2"));
+//     cmd.assert()
+//         .success()
+//         .stdout(predicate::str::contains("Hello, John."))
+//         .stderr(predicate::str::contains("1 + 1 = 2"));
 
-    Ok(())
-}
+//     Ok(())
+// }

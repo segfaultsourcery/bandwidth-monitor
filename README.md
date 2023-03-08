@@ -14,7 +14,8 @@ This uses Ookla to run speed tests and store the results in a google sheet
 
 ## Install
 
-You need to install [speedtest-cli from ookla](https://www.speedtest.net/de/apps/cli) first. 
+You need to install [speedtest-cli from ookla](https://www.speedtest.net/de/apps/cli) first. You also 
+need to run it once and accept the eula manually.
 
 ## Development
 

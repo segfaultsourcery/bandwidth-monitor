@@ -2,12 +2,11 @@ extern crate ansi_term;
 extern crate clap_verbosity_flag;
 extern crate loggerv;
 
-use std::path::{Path, PathBuf};
-
 use anyhow::{Context, Result};
 
 use bandwidth_monitor_google_sheets::{Append, Spreadsheet};
-use log::debug;
+use bandwidth_monitor_ookla_speedtest::{fetch_near_test_servers, test_bandwidth};
+use log::{debug, info};
 
 use clap::Parser;
 
@@ -17,15 +16,29 @@ async fn main() -> Result<()> {
 
     setup(&args).context("Failed to setup application environment")?;
 
-    let spreadsheet = Spreadsheet::connect(
-        &args.client_secrets_file,
-        &args.spreadsheet_id,
-    )
-    .await;
+    let spreadsheet = Spreadsheet::connect(&args.client_secrets_file, &args.spreadsheet_id).await;
+    let near_servers = fetch_near_test_servers();
 
-    spreadsheet
-        .append(&args.sheet, vec![vec!["A".to_string(), "B".to_string()]])
-        .await;
+    for server in near_servers.servers {
+        let result = test_bandwidth(&server);
+
+        info!("{:?}", result);
+
+        // "time","server name","server location","packet loss","idle latency","idle jitter","download","download latency","upload","upload latency"
+        let result_vec = vec![
+            result.timestamp.to_rfc3339(),
+            server.name,
+            server.location,
+            result.packet_loss.to_string(),
+            result.ping.latency.to_string(),
+            (result.download.bandwidth as f32 / 125000.0).to_string(),
+            result.download.latency.iqm.to_string(),
+            (result.upload.bandwidth as f32/ 125000.0).to_string(),
+            result.upload.latency.iqm.to_string(),
+        ];
+
+        spreadsheet.append(&args.sheet, vec![result_vec]).await;
+    }
 
     Ok(())
 }
@@ -62,14 +75,14 @@ struct Args {
     debug: bool,
 
     /// Path to the secrets file provided by google
-    #[structopt(short, long, default_value="client_secret.json")]
+    #[structopt(short, long, default_value = "client_secret.json")]
     client_secrets_file: String,
 
     /// Id of the spreadsheet
     #[structopt()]
     spreadsheet_id: String,
 
-    /// Name of the sheet 
+    /// Name of the sheet
     #[structopt()]
-    sheet: String
+    sheet: String,
 }
