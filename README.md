@@ -12,11 +12,17 @@ If you want to attach some badges, comment them out. You need to adapt the parts
 
 This uses Ookla to run speed tests and store the results in a google sheet
 
-## Prerequisite
+## Install
+
+You need to install [speedtest-cli from ookla](https://www.speedtest.net/de/apps/cli) first. 
+
+## Development
+
+### Prerequisite
 
 * Install [cargo-make](https://github.com/sagiegurari/cargo-make). 
 
-## Test
+### Test
 
 To test this project run
 
