@@ -3,8 +3,8 @@ extern crate clap_verbosity_flag;
 extern crate loggerv;
 use anyhow::{Context, Result};
 
-use bandwidth_monitor_lib_a::hello;
-use bandwidth_monitor_lib_b::add;
+use bandwidth_monitor_google_sheets::add;
+use bandwidth_monitor_ookla_speedtest::hello;
 use log::{debug, info};
 
 use clap::Parser;

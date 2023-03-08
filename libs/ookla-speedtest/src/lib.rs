@@ -18,7 +18,7 @@ pub fn hello(name: &str) -> ResultT<()> {
         Err(BandwidthMonitorError::HelloWorldError(name.to_string()))
     } else {
         info!("I'm going to greet now.");
-        println!("Hello, {}.", name);
+        println!("Hello, {name}.");
         Ok(())
     }
 }

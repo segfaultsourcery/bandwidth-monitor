@@ -1,5 +1,5 @@
 [package]
-name = "bandwidth-monitor-lib-b"
+name = "bandwidth-monitor-google-sheets"
 version = "0.1.0"
 authors = ["Stefan Kuhn <semptic@kuhn.cloud>"]
 edition = "2018"

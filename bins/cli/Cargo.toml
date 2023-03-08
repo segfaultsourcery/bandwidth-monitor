@@ -17,8 +17,8 @@ path="src/main.rs"
 [dependencies]
 log = { workspace = true }
 
-bandwidth-monitor-lib-a = { path = "../../libs/lib-a", version = "0.1.0"  }
-bandwidth-monitor-lib-b = { path = "../../libs/lib-b", version = "0.1.0"  }
+bandwidth-monitor-google-sheets = { path = "../../libs/google-sheets", version = "*"  }
+bandwidth-monitor-ookla-speedtest = { path = "../../libs/ookla-speedtest", version = "*"  }
 
 clap = { version = "~4.1", features = ["derive"] }
 clap-verbosity-flag = "~2.0"
