@@ -22,6 +22,19 @@ To get the latest release you can run
 curl -OL https://github.com/Semptic/bandwidth-monitor/releases/latest/download/bandwidth-monitor
 ```
 
+## Google Credentials
+
+To get the credentials to access google sheets best you follow this [setup](https://developers.google.com/sheets/api/quickstart/python#set_up_your_environment) guide (ignore everything except `Enable the API` and `Authorize credentials for a desktop application`). By default bandwidht-monitor is using `client_secret.json`, but this can be changed.
+
+## Usage
+
+You can run it like
+```bash
+./bandwith-monitor <spreadsheet_id>
+```
+
+You get your sheet id from the URL: `https://docs.google.com/spreadsheets/d/1WOIazmVG9vr2-GcdLi6Yz4sCHjAkgnlqSTvetiUM1oE/edit#gid=1042246224`. The id is the part after `/d/` so in this example it would be `1WOIIzmVG9vr2-GcdLi6Yz4sCHjAkgnlqSTvetiUM1iE`.
+
 ## Development
 
 ### Prerequisite
