@@ -45,12 +45,12 @@ jobs:
       with:
         command: install
         args: --debug cargo-make
-    - name: Run CI
+    - name: Build binaries
       uses: actions-rs/cargo@v1
       with:
         command: make
         args: --env CARGO_MAKE_RELEASE_FLOW_TARGET=${{ matrix.binary_target }} --no-workspace zip-release-ci-flow
-    - name: Upload Binaries
+    - name: Upload binaries
       uses: svenstaro/upload-release-action@v2
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
