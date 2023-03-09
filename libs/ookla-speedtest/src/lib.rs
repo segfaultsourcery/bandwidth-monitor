@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
 use log::error;
+use serde::{Deserialize, Serialize};
 use std::process::Command;
 
 use thiserror::Error;

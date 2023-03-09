@@ -26,16 +26,14 @@ pub struct Spreadsheet {
 
 impl Spreadsheet {
     pub async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self {
-        let secret = oauth2::read_application_secret(secrets_file).await.unwrap();
+        let secret = oauth2::read_service_account_key(secrets_file)
+            .await
+            .expect("user secret");
 
-        let auth = oauth2::InstalledFlowAuthenticator::builder(
-            secret,
-            oauth2::InstalledFlowReturnMethod::HTTPRedirect,
-        )
-        .persist_tokens_to_disk("auth_cache.json")
-        .build()
-        .await
-        .unwrap();
+        let auth = oauth2::ServiceAccountAuthenticator::builder(secret)
+            .build()
+            .await
+            .expect("authenticator");
 
         let hub = Sheets::new(
             hyper::Client::builder().build(
@@ -65,15 +63,13 @@ impl Spreadsheet {
             .unwrap();
 
         if let Some(sheets) = result.1.sheets {
-            sheets
-                .iter()
-                .any(|sheet| {
-                    if let Some(props) = &sheet.properties {
-                      matches!(&props.title, Some(t) if t == title)
-                    } else {
-                        false
-                    }
-                })
+            sheets.iter().any(|sheet| {
+                if let Some(props) = &sheet.properties {
+                    matches!(&props.title, Some(t) if t == title)
+                } else {
+                    false
+                }
+            })
         } else {
             false
         }

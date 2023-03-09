@@ -24,7 +24,7 @@ curl -OL https://github.com/Semptic/bandwidth-monitor/releases/latest/download/b
 
 ## Google Credentials
 
-To get the credentials to access google sheets best you follow this [setup](https://developers.google.com/sheets/api/quickstart/python#set_up_your_environment) guide (ignore everything except `Enable the API` and `Authorize credentials for a desktop application`). By default bandwidht-monitor is using `client_secret.json`, but this can be changed.
+Follow [this](/credentials.md) to setup an service account and to get the key. (This is based on https://github.com/juampynr/google-spreadsheet-reader who did a great job in documenting it.)
 
 ## Usage
 

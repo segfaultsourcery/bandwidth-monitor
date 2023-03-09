@@ -100,7 +100,7 @@ struct Args {
     debug: bool,
 
     /// Path to the secrets file provided by google
-    #[structopt(short, long, default_value = "client_secret.json")]
+    #[structopt(short, long, default_value = "secret.json")]
     client_secrets_file: String,
 
     /// Id of the spreadsheet
