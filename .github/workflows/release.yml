@@ -2,7 +2,6 @@
 name: Release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - '*'
@@ -46,11 +45,6 @@ jobs:
       with:
         command: install
         args: --debug cargo-make
-    - name: Debug
-      uses: actions-rs/cargo@v1
-      with:
-        command: make
-        args: --env CARGO_MAKE_RELEASE_FLOW_TARGET=${{ matrix.binary_target }} --no-workspace print-env-flow
     - name: Build binaries
       uses: actions-rs/cargo@v1
       with:
