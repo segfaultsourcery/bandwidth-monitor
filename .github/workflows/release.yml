@@ -39,11 +39,10 @@ jobs:
         toolchain: stable-x86_64-pc-windows-msvc
         profile: minimal
         override: true
+    - name: Install cargo make
+      uses: davidB/rust-cargo-make@v1
     - name: Build Binary
-      uses: actions-rs/cargo@v1
-      with:
-        command: run
-        args: --bin cargo-make --target-dir target_ci -- make --env CARGO_MAKE_RELEASE_FLOW_TARGET=${{ matrix.binary_target }} zip-release-ci-flow
+      run: cargo make --env CARGO_MAKE_RELEASE_FLOW_TARGET=${{ matrix.binary_target }} --no-workspace zip-release-ci-flow
     - name: Upload Binaries
       uses: svenstaro/upload-release-action@v2
       with:
