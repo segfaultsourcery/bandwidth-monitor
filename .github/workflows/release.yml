@@ -2,24 +2,53 @@
 name: Release
 
 on:
-  workflow_dispatch:
+  push:
+    tags:
+      - '*'
 
 jobs:
   build:
-    name: Release
-    runs-on: ubuntu-latest
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            binary_target: x86_64-unknown-linux-musl
+          - os: windows-latest
+            binary_target: x86_64-pc-windows-msvc
+          - os: macos-latest
+            binary_target: x86_64-apple-darwin
     steps:
-      - uses: actions/checkout@master
-      - name: Build
-        run: cargo build --release
-      - name: Get short commit id
-        id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: Publish
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/bandwidth-monitor
-          tag: ${{ steps.vars.outputs.sha_short }}
-          overwrite: true
-          body: "Release of ${{ github.sha }}"
+    - name: Install musl tools
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install musl-tools
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Install rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        profile: minimal
+        override: true
+    - name: Install rust windows msvc target
+      if: matrix.os == 'windows-latest'
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable-x86_64-pc-windows-msvc
+        profile: minimal
+        override: true
+    - name: Build Binary
+      uses: actions-rs/cargo@v1
+      with:
+        command: run
+        args: --bin cargo-make --target-dir target_ci -- make --env CARGO_MAKE_RELEASE_FLOW_TARGET=${{ matrix.binary_target }} zip-release-ci-flow
+    - name: Upload Binaries
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: '*.zip'
+        tag: ${{ github.ref }}
+        overwrite: true
+        file_glob: true
