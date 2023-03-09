@@ -36,16 +36,14 @@ pub struct Spreadsheet {
 #[async_trait::async_trait]
 impl SpreadsheetTrait for Spreadsheet {
     async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self {
-        let secret = oauth2::read_application_secret(secrets_file).await.unwrap();
+        let secret = oauth2::read_service_account_key(secrets_file)
+            .await
+            .expect("user secret");
 
-        let auth = oauth2::InstalledFlowAuthenticator::builder(
-            secret,
-            oauth2::InstalledFlowReturnMethod::HTTPRedirect,
-        )
-        .persist_tokens_to_disk("auth_cache.json")
-        .build()
-        .await
-        .unwrap();
+        let auth = oauth2::ServiceAccountAuthenticator::builder(secret)
+            .build()
+            .await
+            .expect("authenticator");
 
         let hub = Sheets::new(
             hyper::Client::builder().build(

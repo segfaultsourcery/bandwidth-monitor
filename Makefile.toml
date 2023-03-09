@@ -1,5 +1,5 @@
 [config]
-main_project_member="bandwidth-monitor"
+main_project_member="bins/cli"
 
 [tasks.clippy]
 dependencies = ["build", "format"]

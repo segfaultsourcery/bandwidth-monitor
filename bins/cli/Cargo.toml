@@ -1,7 +1,7 @@
 [package]
 name = "bandwidth-monitor"
 description = "This uses Ookla to run speed tests and store the results in a google sheet"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Stefan Kuhn <semptic@kuhn.cloud>"]
 edition = "2018"
 license-file = "../../LICENSE"
