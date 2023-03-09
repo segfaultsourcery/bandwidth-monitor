@@ -19,13 +19,23 @@ pub type ResultT<T> = Result<T, BandwidthMonitorError>;
 
 pub type Hub = Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>>;
 
+#[mockall::automock]
+#[async_trait::async_trait]
+pub trait SpreadsheetTrait {
+    async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self;
+    async fn sheet_exists(&self, title: &str) -> bool;
+    async fn create_sheet(&self, title: &str);
+    async fn append<'a>(&'a self, sheet: &'a str, data: Vec<Vec<String>>);
+}
+
 pub struct Spreadsheet {
     hub: Hub,
     spreadsheet_id: String,
 }
 
-impl Spreadsheet {
-    pub async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self {
+#[async_trait::async_trait]
+impl SpreadsheetTrait for Spreadsheet {
+    async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self {
         let secret = oauth2::read_application_secret(secrets_file).await.unwrap();
 
         let auth = oauth2::InstalledFlowAuthenticator::builder(
@@ -55,7 +65,7 @@ impl Spreadsheet {
         }
     }
 
-    pub async fn sheet_exists(&self, title: &str) -> bool {
+    async fn sheet_exists(&self, title: &str) -> bool {
         let result = self
             .hub
             .spreadsheets()
@@ -65,21 +75,19 @@ impl Spreadsheet {
             .unwrap();
 
         if let Some(sheets) = result.1.sheets {
-            sheets
-                .iter()
-                .any(|sheet| {
-                    if let Some(props) = &sheet.properties {
-                      matches!(&props.title, Some(t) if t == title)
-                    } else {
-                        false
-                    }
-                })
+            sheets.iter().any(|sheet| {
+                if let Some(props) = &sheet.properties {
+                    matches!(&props.title, Some(t) if t == title)
+                } else {
+                    false
+                }
+            })
         } else {
             false
         }
     }
 
-    pub async fn create_sheet(&self, title: &str) {
+    async fn create_sheet(&self, title: &str) {
         let req = BatchUpdateSpreadsheetRequest {
             requests: Some(vec![Request {
                 add_sheet: Some(AddSheetRequest {
@@ -101,7 +109,7 @@ impl Spreadsheet {
             .unwrap();
     }
 
-    pub async fn append(&self, sheet: &str, data: Vec<Vec<String>>) {
+    async fn append<'a>(&'a self, sheet: &'a str, data: Vec<Vec<String>>) {
         // As the method needs a request, you would usually fill it with the desired information
         // into the respective structure. Some of the parts shown here might not be applicable !
         // Values shown here are possibly random and not representative !
@@ -146,13 +154,3 @@ impl Spreadsheet {
         }
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn test_add() {
-//         assert_eq!(add(1, 10), Ok(11));
-//     }
-// }

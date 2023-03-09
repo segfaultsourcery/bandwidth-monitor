@@ -4,8 +4,8 @@ extern crate loggerv;
 
 use anyhow::{Context, Result};
 
-use bandwidth_monitor_google_sheets::Spreadsheet;
-use bandwidth_monitor_ookla_speedtest::{fetch_near_test_servers, test_bandwidth, Server};
+use bandwidth_monitor_google_sheets::{Spreadsheet, SpreadsheetTrait};
+use bandwidth_monitor_ookla_speedtest::{BandwidthTester, BandwidthTesterTrait, Server};
 use log::{debug, info};
 
 use clap::Parser;
@@ -17,19 +17,25 @@ async fn main() -> Result<()> {
     setup(&args).context("Failed to setup application environment")?;
 
     let spreadsheet = Spreadsheet::connect(&args.client_secrets_file, &args.spreadsheet_id).await;
-    let near_servers = fetch_near_test_servers();
+    let bandwidth_tester = BandwidthTester();
+
+    let near_servers = bandwidth_tester.fetch_near_test_servers();
 
     for server in near_servers.servers {
-        test_and_store(&spreadsheet, &server).await;
+        test_and_store(&bandwidth_tester, &spreadsheet, &server).await;
     }
 
     Ok(())
 }
 
-async fn test_and_store(spreadsheet: &Spreadsheet, server: &Server) {
+async fn test_and_store(
+    bandwidth_tester: &impl BandwidthTesterTrait,
+    spreadsheet: &impl SpreadsheetTrait,
+    server: &Server,
+) {
     info!("Testing {}", server.name);
 
-    let result = test_bandwidth(server);
+    let result = bandwidth_tester.test_bandwidth(server);
 
     let result_vec = vec![
         result.timestamp.to_rfc3339(),
@@ -106,4 +112,187 @@ struct Args {
     /// Id of the spreadsheet
     #[structopt()]
     spreadsheet_id: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use bandwidth_monitor_google_sheets::MockSpreadsheetTrait as Spreadsheet;
+    use bandwidth_monitor_ookla_speedtest::{
+        MockBandwidthTesterTrait as BandwidthTester, TestResult,
+    };
+    use mockall::Sequence;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn ensure_test_and_store_works_properly_for_existing_spreadsheets() {
+        let server = Server {
+            id: 1,
+            host: "host".into(),
+            location: "location".into(),
+            name: "my_little_server".into(),
+        };
+
+        // Mock the spreadsheet.
+        let spreadsheet = {
+            let server_name = server.name.clone();
+
+            let mut spreadsheet = Spreadsheet::new();
+
+            spreadsheet.expect_sheet_exists().returning(|_| true);
+
+            spreadsheet
+                .expect_append()
+                .returning(move |supplied_server, supplied_rows| {
+                    // check that server and rows are what you expect.
+
+                    assert_eq!(
+                        &server_name, supplied_server,
+                        "the server name wasn't right"
+                    );
+
+                    let expected_rows = vec![vec![
+                        "1970-01-01T01:00:00+01:00",
+                        &server_name,
+                        "location",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                    ]];
+
+                    assert_eq!(
+                        expected_rows, supplied_rows,
+                        "the supplied rows weren't right"
+                    );
+                });
+
+            spreadsheet
+        };
+
+        // Mock the bandwidth tester.
+        let bandwidth_tester = {
+            let server_name = server.name.clone();
+
+            let mut bandwidth_tester = BandwidthTester::new();
+
+            bandwidth_tester
+                .expect_test_bandwidth()
+                .returning(move |server| {
+                    assert_eq!(server_name, server.name, "the server name wasn't right");
+
+                    TestResult {
+                        timestamp: Default::default(),
+                        ping: Default::default(),
+                        download: Default::default(),
+                        upload: Default::default(),
+                        packet_loss: None,
+                    }
+                });
+
+            bandwidth_tester
+        };
+
+        // Run the test.
+        test_and_store(&bandwidth_tester, &spreadsheet, &server).await;
+    }
+
+    #[tokio::test]
+    async fn ensure_test_and_store_works_properly_for_new_spreadsheets() {
+        let server = Server {
+            id: 1,
+            host: "host".into(),
+            location: "location".into(),
+            name: "my_little_server".into(),
+        };
+
+        // Mock the spreadsheet.
+        let spreadsheet = {
+            let server_name = server.name.clone();
+
+            let mut spreadsheet = Spreadsheet::new();
+
+            spreadsheet.expect_sheet_exists().returning(|_| false);
+            spreadsheet.expect_create_sheet().returning(|_| {});
+
+            // The sequence lets us have multiple outcomes for the same function.
+            let mut seq = Sequence::new();
+
+            spreadsheet
+                .expect_append()
+                .times(1)
+                .returning(move |_, supplied_rows| {
+                    let expected_rows = vec![vec![
+                        "Time",
+                        "Server Name",
+                        "Server Location",
+                        "Packet Loss",
+                        "Idle Latency (ms)",
+                        "Download (Mbps)",
+                        "Download Latency (ms)",
+                        "Upload (Mbps)",
+                        "Upload Latency (ms)",
+                    ]];
+
+                    assert_eq!(
+                        expected_rows, supplied_rows,
+                        "the supplied rows weren't right"
+                    );
+                })
+                .in_sequence(&mut seq);
+
+            spreadsheet
+                .expect_append()
+                .times(1)
+                .returning(move |_, supplied_rows| {
+                    let expected_rows = vec![vec![
+                        "1970-01-01T01:00:00+01:00",
+                        &server_name,
+                        "location",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                        "0",
+                    ]];
+
+                    assert_eq!(
+                        expected_rows, supplied_rows,
+                        "the supplied rows weren't right"
+                    );
+                })
+                .in_sequence(&mut seq);
+
+            spreadsheet
+        };
+
+        // Mock the bandwidth tester.
+        let bandwidth_tester = {
+            let server_name = server.name.clone();
+
+            let mut bandwidth_tester = BandwidthTester::new();
+
+            bandwidth_tester
+                .expect_test_bandwidth()
+                .returning(move |server| {
+                    assert_eq!(server_name, server.name, "the server name wasn't right");
+
+                    TestResult {
+                        timestamp: Default::default(),
+                        ping: Default::default(),
+                        download: Default::default(),
+                        upload: Default::default(),
+                        packet_loss: None,
+                    }
+                });
+
+            bandwidth_tester
+        };
+
+        // Run the test.
+        test_and_store(&bandwidth_tester, &spreadsheet, &server).await;
+    }
 }
