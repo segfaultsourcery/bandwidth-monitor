@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
-use serde::{Deserialize, Serialize};
 use log::error;
+use serde::{Deserialize, Serialize};
 use std::process::Command;
 
 use thiserror::Error;
@@ -24,7 +24,7 @@ pub struct ServerList {
     pub servers: Vec<Server>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Ping {
     pub jitter: f32,
     pub latency: f32,
@@ -32,7 +32,7 @@ pub struct Ping {
     pub high: f32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Latency {
     pub iqm: f32,
     pub low: f32,
@@ -40,7 +40,7 @@ pub struct Latency {
     pub jitter: f32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct Bandwidth {
     pub bandwidth: u32,
     pub bytes: u32,
@@ -60,54 +60,42 @@ pub struct TestResult {
 
 pub type ResultT<T> = Result<T, BandwidthMonitorError>;
 
-pub fn fetch_near_test_servers() -> ServerList {
-    let output = Command::new("/usr/bin/speedtest")
-        .arg("--servers")
-        .arg("--format")
-        .arg("json")
-        .output()
-        .unwrap();
-
-    let stdout = String::from_utf8(output.stdout).unwrap();
-
-    serde_json::from_str(stdout.as_str()).unwrap()
+#[mockall::automock]
+pub trait BandwidthTesterTrait {
+    fn fetch_near_test_servers(&self) -> ServerList;
+    fn test_bandwidth(&self, server: &Server) -> TestResult;
 }
 
-pub fn test_bandwidth(server: &Server) -> TestResult {
-    let output = Command::new("/usr/bin/speedtest")
-        .arg("--server-id")
-        .arg(server.id.to_string())
-        .arg("--format")
-        .arg("json")
-        .arg("-A")
-        .output()
-        .unwrap();
+pub struct BandwidthTester();
 
-    let stdout = String::from_utf8(output.stdout).unwrap();
+impl BandwidthTesterTrait for BandwidthTester {
+    fn fetch_near_test_servers(&self) -> ServerList {
+        let output = Command::new("/usr/bin/speedtest")
+            .arg("--servers")
+            .arg("--format")
+            .arg("json")
+            .output()
+            .unwrap();
 
-    error!("{stdout}");
+        let stdout = String::from_utf8(output.stdout).unwrap();
 
-    serde_json::from_str(stdout.as_str()).unwrap()
+        serde_json::from_str(stdout.as_str()).unwrap()
+    }
+
+    fn test_bandwidth(&self, server: &Server) -> TestResult {
+        let output = Command::new("/usr/bin/speedtest")
+            .arg("--server-id")
+            .arg(server.id.to_string())
+            .arg("--format")
+            .arg("json")
+            .arg("-A")
+            .output()
+            .unwrap();
+
+        let stdout = String::from_utf8(output.stdout).unwrap();
+
+        error!("{stdout}");
+
+        serde_json::from_str(stdout.as_str()).unwrap()
+    }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     #[test]
-//     fn hello_world_error() {
-//         assert_eq!(
-//             hello("World"),
-//             Err(BandwidthMonitorError::HelloWorldError("World".to_string()))
-//         );
-//         assert_eq!(
-//             hello("wOrld"),
-//             Err(BandwidthMonitorError::HelloWorldError("wOrld".to_string()))
-//         );
-//     }
-
-//     #[test]
-//     fn hello_world_success() {
-//         assert_eq!(hello("Semptic"), Ok(()));
-//     }
-// }
