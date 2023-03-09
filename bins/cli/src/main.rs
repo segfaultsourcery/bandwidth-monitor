@@ -69,8 +69,8 @@ async fn test_and_store(spreadsheet: &Spreadsheet, server: &Server) {
 }
 
 fn setup(opt: &Args) -> Result<()> {
-    #[cfg(windows)]
-    ansi_term::enable_ansi_support().context("Failed to enable ansi support")?;
+    // #[cfg(windows)]
+    // ansi_term::enable_ansi_support().context("Failed to enable ansi support")?;
 
     loggerv::Logger::new()
         .max_level(
