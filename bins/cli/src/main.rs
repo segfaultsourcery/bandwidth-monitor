@@ -4,7 +4,7 @@ extern crate loggerv;
 
 use anyhow::{Context, Result};
 
-use bandwidth_monitor_google_sheets::{Spreadsheet, SpreadsheetTrait};
+use bandwidth_monitor_google_sheets::{Spreadsheet, Create, Append};
 use bandwidth_monitor_ookla_speedtest::{BandwidthTester, BandwidthTesterTrait, Server};
 use log::{debug, info};
 
@@ -28,11 +28,13 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn test_and_store(
+async fn test_and_store<S>(
     bandwidth_tester: &impl BandwidthTesterTrait,
-    spreadsheet: &impl SpreadsheetTrait,
+    spreadsheet: &S,
     server: &Server,
-) {
+)
+where S: Create + Append
+ {
     info!("Testing {}", server.name);
 
     let result = bandwidth_tester.test_bandwidth(server);
@@ -116,13 +118,34 @@ struct Args {
 
 #[cfg(test)]
 mod tests {
-    use bandwidth_monitor_google_sheets::MockSpreadsheetTrait as Spreadsheet;
+    use bandwidth_monitor_google_sheets::{Create, Append};
     use bandwidth_monitor_ookla_speedtest::{
         MockBandwidthTesterTrait as BandwidthTester, TestResult,
     };
-    use mockall::Sequence;
+    use mockall::{Sequence, mock};
 
     use super::*;
+
+    // When you need to combine multiple traits, you can do it like this.
+    // This is necessary because the `test_and_store` function expects
+    // spreadsheet to be `S`, where `S` is `Create + Append`.
+    // 
+    // The type that comes out of this will be named `MockSpreadsheet`.
+    mock!{
+        Spreadsheet {}
+
+        #[async_trait::async_trait]
+        impl Create for Spreadsheet {
+            async fn sheet_exists(&self, title: &str) -> bool;
+            async fn create_sheet(&self, title: &str);
+        
+        }
+
+        #[async_trait::async_trait]
+        impl Append for Spreadsheet {
+            async fn append<'a>(&'a self, sheet: &'a str, data: Vec<Vec<String>>);
+        }
+    }
 
     #[tokio::test]
     async fn ensure_test_and_store_works_properly_for_existing_spreadsheets() {
@@ -137,7 +160,7 @@ mod tests {
         let spreadsheet = {
             let server_name = server.name.clone();
 
-            let mut spreadsheet = Spreadsheet::new();
+            let mut spreadsheet = MockSpreadsheet::new();
 
             spreadsheet.expect_sheet_exists().returning(|_| true);
 
@@ -212,7 +235,7 @@ mod tests {
         let spreadsheet = {
             let server_name = server.name.clone();
 
-            let mut spreadsheet = Spreadsheet::new();
+            let mut spreadsheet = MockSpreadsheet::new();
 
             spreadsheet.expect_sheet_exists().returning(|_| false);
             spreadsheet.expect_create_sheet().returning(|_| {});

@@ -21,11 +21,15 @@ pub type Hub = Sheets<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>
 
 #[mockall::automock]
 #[async_trait::async_trait]
-pub trait SpreadsheetTrait {
-    async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self;
+pub trait Append {
+    async fn append<'a>(&'a self, sheet: &'a str, data: Vec<Vec<String>>);
+}
+
+#[mockall::automock]
+#[async_trait::async_trait]
+pub trait Create {
     async fn sheet_exists(&self, title: &str) -> bool;
     async fn create_sheet(&self, title: &str);
-    async fn append<'a>(&'a self, sheet: &'a str, data: Vec<Vec<String>>);
 }
 
 pub struct Spreadsheet {
@@ -33,9 +37,8 @@ pub struct Spreadsheet {
     spreadsheet_id: String,
 }
 
-#[async_trait::async_trait]
-impl SpreadsheetTrait for Spreadsheet {
-    async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self {
+impl Spreadsheet {
+    pub async fn connect(secrets_file: &str, spreadsheet_id: &str) -> Self {
         let secret = oauth2::read_service_account_key(secrets_file)
             .await
             .expect("user secret");
@@ -62,7 +65,10 @@ impl SpreadsheetTrait for Spreadsheet {
             spreadsheet_id: spreadsheet_id.to_string(),
         }
     }
+}
 
+#[async_trait::async_trait]
+impl Create for Spreadsheet {
     async fn sheet_exists(&self, title: &str) -> bool {
         let result = self
             .hub
@@ -106,7 +112,10 @@ impl SpreadsheetTrait for Spreadsheet {
             .await
             .unwrap();
     }
+}
 
+#[async_trait::async_trait]
+impl Append for Spreadsheet {
     async fn append<'a>(&'a self, sheet: &'a str, data: Vec<Vec<String>>) {
         // As the method needs a request, you would usually fill it with the desired information
         // into the respective structure. Some of the parts shown here might not be applicable !
@@ -150,5 +159,5 @@ impl SpreadsheetTrait for Spreadsheet {
             },
             Ok(res) => info!("Success: {:?}", res),
         }
-    }
+    }    
 }
