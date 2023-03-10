@@ -159,5 +159,5 @@ impl Append for Spreadsheet {
             },
             Ok(res) => info!("Success: {:?}", res),
         }
-    }    
+    }
 }
